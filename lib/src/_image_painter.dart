@@ -13,10 +13,8 @@ class DrawImage extends CustomPainter {
   late ImagePainterController _controller;
 
   ///Constructor for the canvas
-  DrawImage({
-    required ImagePainterController controller,
-    this.backgroundColor,
-  }) : super(repaint: controller) {
+  DrawImage({required ImagePainterController controller, this.backgroundColor})
+    : super(repaint: controller) {
     _controller = controller;
   }
 
@@ -48,8 +46,9 @@ class DrawImage extends CustomPainter {
           final path = Path();
           path.addOval(
             Rect.fromCircle(
-                center: _offset[1]!,
-                radius: (_offset[0]! - _offset[1]!).distance),
+              center: _offset[1]!,
+              radius: (_offset[0]! - _offset[1]!).distance,
+            ),
           );
           canvas.drawPath(path, _painter);
           break;
@@ -70,11 +69,70 @@ class DrawImage extends CustomPainter {
                 ..lineTo(_offset[i + 1]!.dx, _offset[i + 1]!.dy);
               canvas.drawPath(_path, _painter..strokeCap = StrokeCap.round);
             } else if (_offset[i] != null && _offset[i + 1] == null) {
-              canvas.drawPoints(PointMode.points, [_offset[i]!],
-                  _painter..strokeCap = StrokeCap.round);
+              canvas.drawPoints(PointMode.points, [
+                _offset[i]!,
+              ], _painter..strokeCap = StrokeCap.round);
             }
           }
           break;
+
+        case PaintMode.magnifier:
+          final center = item.offsets[0]!;
+          final radius = item.magnifierRadius;
+          final scale = item.magnifierScale;
+
+          canvas.save();
+          Path clipPath = Path()
+            ..addOval(Rect.fromCircle(center: center, radius: radius));
+          canvas.clipPath(clipPath);
+
+          canvas.save();
+          canvas.translate(center.dx * (1 - scale), center.dy * (1 - scale));
+          canvas.scale(scale);
+          paintImage(
+            canvas: canvas,
+            image: _controller.image!,
+            rect: Rect.fromPoints(Offset.zero, Offset(size.width, size.height)),
+            filterQuality: FilterQuality.high,
+          );
+          canvas.restore();
+          canvas.restore();
+
+          final borderPaint = Paint()
+            ..color = Colors.white
+            ..strokeWidth = 3
+            ..style = PaintingStyle.stroke;
+          canvas.drawCircle(center, radius, borderPaint);
+          break;
+
+
+
+        case PaintMode.spotlight:
+          final center = item.offsets[0]!;
+          final radius = 100.0;
+          canvas.saveLayer(
+            Rect.fromLTWH(0, 0, size.width, size.height),
+            Paint(),
+          );
+          canvas.drawRect(
+            Rect.fromLTWH(0, 0, size.width, size.height),
+            Paint()
+              ..color = Colors.black.withOpacity(0.65)
+              ..blendMode = BlendMode.srcOver,
+          );
+          final clearPaint = Paint()..blendMode = BlendMode.clear;
+          canvas.drawCircle(center, radius, clearPaint);
+
+          canvas.restore();
+          final borderPaint = Paint()
+            ..color = Colors.white
+            ..strokeWidth = 3
+            ..style = PaintingStyle.stroke;
+
+          canvas.drawCircle(center, radius, borderPaint);
+          break;
+
+
         case PaintMode.text:
           final textSpan = TextSpan(
             text: item.text,
@@ -91,10 +149,14 @@ class DrawImage extends CustomPainter {
           );
           textPainter.layout(minWidth: 0, maxWidth: size.width);
           final textOffset = _offset.isEmpty
-              ? Offset(size.width / 2 - textPainter.width / 2,
-                  size.height / 2 - textPainter.height / 2)
-              : Offset(_offset[0]!.dx - textPainter.width / 2,
-                  _offset[0]!.dy - textPainter.height / 2);
+              ? Offset(
+                  size.width / 2 - textPainter.width / 2,
+                  size.height / 2 - textPainter.height / 2,
+                )
+              : Offset(
+                  _offset[0]!.dx - textPainter.width / 2,
+                  _offset[0]!.dy - textPainter.height / 2,
+                );
           textPainter.paint(canvas, textOffset);
           break;
         default:
@@ -115,8 +177,9 @@ class DrawImage extends CustomPainter {
           break;
         case PaintMode.circle:
           final path = Path();
-          path.addOval(Rect.fromCircle(
-              center: _end!, radius: (_end - _start!).distance));
+          path.addOval(
+            Rect.fromCircle(center: _end!, radius: (_end - _start!).distance),
+          );
           canvas.drawPath(path, _paint);
           break;
         case PaintMode.arrow:
@@ -133,12 +196,14 @@ class DrawImage extends CustomPainter {
           for (int i = 0; i < _controller.offsets.length - 1; i++) {
             if (points[i] != null && points[i + 1] != null) {
               canvas.drawLine(
-                  Offset(points[i]!.dx, points[i]!.dy),
-                  Offset(points[i + 1]!.dx, points[i + 1]!.dy),
-                  _paint..strokeCap = StrokeCap.round);
+                Offset(points[i]!.dx, points[i]!.dy),
+                Offset(points[i + 1]!.dx, points[i + 1]!.dy),
+                _paint..strokeCap = StrokeCap.round,
+              );
             } else if (points[i] != null && points[i + 1] == null) {
-              canvas.drawPoints(PointMode.points,
-                  [Offset(points[i]!.dx, points[i]!.dy)], _paint);
+              canvas.drawPoints(PointMode.points, [
+                Offset(points[i]!.dx, points[i]!.dy),
+              ], _paint);
             }
           }
           break;
@@ -220,7 +285,9 @@ enum PaintMode {
   circle,
 
   ///Allows to draw dashed line between two point.
-  dashLine
+  dashLine,
+  magnifier,
+  spotlight,
 }
 
 ///[PaintInfo] keeps track of a single unit of shape, whichever selected.
@@ -233,6 +300,10 @@ class PaintInfo {
 
   //Used to store strokesize of the mode.
   final double strokeWidth;
+
+  double magnifierRadius;
+
+  double magnifierScale;
 
   ///Used to save offsets.
   ///Two point in case of other shapes and list of points for [FreeStyle].
@@ -265,5 +336,7 @@ class PaintInfo {
     required this.strokeWidth,
     this.text = '',
     this.fill = false,
+    this.magnifierRadius = 120,
+    this.magnifierScale = 3.0,
   });
 }
