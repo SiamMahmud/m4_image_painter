@@ -662,7 +662,12 @@ class ImagePainterState extends State<ImagePainter> {
     if (_controller.start == null) {
       _controller.setStart(_zoomAdjustedOffset);
     }
-    _controller.setEnd(_zoomAdjustedOffset);
+    if (_controller.mode == PaintMode.magnifier ||
+        _controller.mode == PaintMode.spotlight) {
+      _controller.setStart(_zoomAdjustedOffset);
+      _controller.notifyListeners();
+      return;
+    }
     if (_controller.mode == PaintMode.freeStyle) {
       _controller.addOffsets(_zoomAdjustedOffset);
     }
@@ -698,13 +703,15 @@ class ImagePainterState extends State<ImagePainter> {
       _addPaintHistory(
         PaintInfo(
           mode: PaintMode.magnifier,
-          offsets: [_controller.start, _controller.end],
+          offsets: [_controller.start],
           color: Colors.transparent,
           strokeWidth: 0,
-          magnifierScale: 2.0,
+          magnifierRadius: 120,
+          magnifierScale: 2.5,
         ),
       );
-    } else if (_controller.mode == PaintMode.spotlight) {
+    }
+    else if (_controller.mode == PaintMode.spotlight) {
       _addPaintHistory(
         PaintInfo(
           mode: PaintMode.spotlight,

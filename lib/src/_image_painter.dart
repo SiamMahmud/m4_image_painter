@@ -99,38 +99,14 @@ class DrawImage extends CustomPainter {
           canvas.restore();
 
           final borderPaint = Paint()
-            ..color = Colors.white
-            ..strokeWidth = 3
+            ..color = Colors.red
+            ..strokeWidth = 10
             ..style = PaintingStyle.stroke;
           canvas.drawCircle(center, radius, borderPaint);
           break;
-
-
-
         case PaintMode.spotlight:
-          final center = item.offsets[0]!;
-          final radius = 100.0;
-          canvas.saveLayer(
-            Rect.fromLTWH(0, 0, size.width, size.height),
-            Paint(),
-          );
-          canvas.drawRect(
-            Rect.fromLTWH(0, 0, size.width, size.height),
-            Paint()
-              ..color = Colors.black.withOpacity(0.65)
-              ..blendMode = BlendMode.srcOver,
-          );
-          final clearPaint = Paint()..blendMode = BlendMode.clear;
-          canvas.drawCircle(center, radius, clearPaint);
-
-          canvas.restore();
-          final borderPaint = Paint()
-            ..color = Colors.white
-            ..strokeWidth = 3
-            ..style = PaintingStyle.stroke;
-
-          canvas.drawCircle(center, radius, borderPaint);
           break;
+
 
 
         case PaintMode.text:
@@ -160,6 +136,54 @@ class DrawImage extends CustomPainter {
           textPainter.paint(canvas, textOffset);
           break;
         default:
+      }
+    }
+    final spotlightItems = _controller.paintHistory
+        .where((e) => e.mode == PaintMode.spotlight)
+        .toList();
+    if (_controller.busy &&
+        _controller.mode == PaintMode.spotlight &&
+        _controller.start != null) {
+      spotlightItems.add(
+        PaintInfo(
+          mode: PaintMode.spotlight,
+          offsets: [_controller.start],
+          color: Colors.transparent,
+          strokeWidth: 0,
+        ),
+      );
+    }
+
+    if (spotlightItems.isNotEmpty) {
+      final radius = 120.0;
+      final overlayRect = Rect.fromLTWH(0, 0, size.width, size.height);
+      canvas.saveLayer(overlayRect, Paint());
+
+      canvas.drawRect(
+        overlayRect,
+        Paint()..color = Colors.black.withOpacity(0.65),
+      );
+      final clearPaint = Paint()..blendMode = BlendMode.clear;
+      for (final s in spotlightItems) {
+        final center = s.offsets.isNotEmpty ? s.offsets[0] : null;
+        if (center != null) {
+          canvas.drawCircle(center, radius, clearPaint);
+        }
+      }
+
+      canvas.restore();
+      for (final s in spotlightItems) {
+        final center = s.offsets.isNotEmpty ? s.offsets[0] : null;
+        if (center == null) continue;
+
+        canvas.drawCircle(
+          center,
+          radius,
+          Paint()
+            ..color = Colors.white
+            ..strokeWidth = 3
+            ..style = PaintingStyle.stroke,
+        );
       }
     }
 
