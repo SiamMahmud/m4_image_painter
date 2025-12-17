@@ -104,6 +104,12 @@ List<ModeData> paintModes(TextDelegate textDelegate) => [
     mode: PaintMode.spotlight,
     label: textDelegate.spotlight,
   ),
+  ModeData(
+    icon: Icons.blur_on,
+    mode: PaintMode.mosaic,
+    label: textDelegate.mosaic,
+  ),
+
 ];
 
 @immutable

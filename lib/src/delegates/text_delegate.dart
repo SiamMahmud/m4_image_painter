@@ -9,6 +9,7 @@ class TextDelegate {
   final String text = "Text";
   final String magnifier = "Magnifier";
   final String spotlight = "Spotlight";
+  final String mosaic = "Mosaic";
   final String changeMode = "Change Mode";
   final String changeColor = "Change Color";
   final String changeBrushSize = "Change Brush Size";

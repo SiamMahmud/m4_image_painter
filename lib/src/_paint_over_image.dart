@@ -721,6 +721,18 @@ class ImagePainterState extends State<ImagePainter> {
         ),
       );
     }
+    else if (_controller.mode == PaintMode.mosaic) {
+      _addPaintHistory(
+        PaintInfo(
+          mode: PaintMode.mosaic,
+          offsets: [_controller.start],
+          color: Colors.transparent,
+          strokeWidth: 0,
+          mosaicBlockSize: 14,
+        ),
+      );
+    }
+
 
     _controller.resetStartAndEnd();
   }

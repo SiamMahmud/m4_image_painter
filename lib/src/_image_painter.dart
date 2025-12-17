@@ -1,3 +1,4 @@
+import 'dart:math';
 import 'dart:ui';
 
 import 'package:flutter/material.dart' hide Image;
@@ -107,7 +108,54 @@ class DrawImage extends CustomPainter {
         case PaintMode.spotlight:
           break;
 
+        case PaintMode.mosaic:
+          final center = item.offsets[0]!;
+          final radius = 120.0;
+          final blockSize = item.mosaicBlockSize;
 
+          final image = _controller.image!;
+          final imgW = image.width.toDouble();
+          final imgH = image.height.toDouble();
+
+          final random = Random(center.dx.toInt() + center.dy.toInt());
+
+          canvas.save();
+
+          canvas.clipPath(
+            Path()..addOval(Rect.fromCircle(center: center, radius: radius)),
+          );
+
+          for (
+            double x = center.dx - radius;
+            x < center.dx + radius;
+            x += blockSize
+          ) {
+            for (
+              double y = center.dy - radius;
+              y < center.dy + radius;
+              y += blockSize
+            ) {
+              // Slight random offset inside block
+              final jitterX = random.nextDouble() * blockSize;
+              final jitterY = random.nextDouble() * blockSize;
+
+              final sx = (x + jitterX).clamp(0.0, imgW - 1);
+              final sy = (y + jitterY).clamp(0.0, imgH - 1);
+
+              final srcRect = Rect.fromLTWH(sx, sy, 1, 1);
+              final dstRect = Rect.fromLTWH(x, y, blockSize, blockSize);
+
+              canvas.drawImageRect(
+                image,
+                srcRect,
+                dstRect,
+                Paint()..filterQuality = FilterQuality.none,
+              );
+            }
+          }
+
+          canvas.restore();
+          break;
 
         case PaintMode.text:
           final textSpan = TextSpan(
@@ -312,6 +360,7 @@ enum PaintMode {
   dashLine,
   magnifier,
   spotlight,
+  mosaic,
 }
 
 ///[PaintInfo] keeps track of a single unit of shape, whichever selected.
@@ -328,6 +377,8 @@ class PaintInfo {
   double magnifierRadius;
 
   double magnifierScale;
+
+  double mosaicBlockSize;
 
   ///Used to save offsets.
   ///Two point in case of other shapes and list of points for [FreeStyle].
@@ -362,5 +413,6 @@ class PaintInfo {
     this.fill = false,
     this.magnifierRadius = 120,
     this.magnifierScale = 3.0,
+    this.mosaicBlockSize = 32,
   });
 }
