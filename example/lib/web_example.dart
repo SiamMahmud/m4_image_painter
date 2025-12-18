@@ -27,7 +27,7 @@ class _WebExampleState extends State<WebExample> {
         ],
       ),
       body: ImagePainter.asset(
-        "assets/sample.jpg",
+        "assets/sample_1.jpg",
         controller: _controller,
         scalable: true,
         textDelegate: TextDelegate(),
